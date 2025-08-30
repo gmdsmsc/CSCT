@@ -342,7 +342,7 @@ if __name__ == '__main__':
 
     
     # Example usage
-    dataset = CustomDatasetAll("E:/python_home/flappy_bird", 20, 10, transform=transform)
+    dataset = CustomDatasetAll("./data", 20, 10, transform=transform)
 
 
     check(model, 'cuda', dataset)

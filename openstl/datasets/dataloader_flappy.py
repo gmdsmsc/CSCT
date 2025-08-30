@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
     # print(x.min(), x.max(), x.dtype)
 
-    dataset = CustomDatasetAll("E:/python_home/flappy_bird", 6, 3)
+    dataset = CustomDatasetAll("./data", 6, 3)
 
     num_datasets = len(dataset.datasets)
     print(num_datasets)

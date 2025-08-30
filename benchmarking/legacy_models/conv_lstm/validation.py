@@ -225,7 +225,7 @@ if __name__ == '__main__':
     from openstl.datasets.dataloader_flappy import load_data
 
     # Example usage
-    train_data, vali_data, test_data = load_data(1, 1, "E:/python_home/flappy_bird", num_workers=0)
+    train_data, vali_data, test_data = load_data(1, 1, "./data", num_workers=0)
 
 
     validate(model, device, test_data)

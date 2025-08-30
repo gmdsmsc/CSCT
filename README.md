@@ -1,6 +1,8 @@
 # Interactive Prediction Transformer without Recurrence or Convolution
 
+## Overview
 
+The following project extends [PredFormer](https://github.com/yyyujintang/PredFormer) to test it for interactive prediciton with a custom dataset for a jumping box (based on the video game Flappy Bird).
 
 ## Installation
 
@@ -11,6 +13,8 @@ conda activate predformer
 pip install -e .
 pip install tensorboard einops
 ```
+
+Add the top level project to your PYTHONPATH:  $env:PYTHONPATH="/path/to/CSCT"
 
 ## Overview
 

@@ -180,13 +180,11 @@ def train_model(model, loss_fn, dataloader, vali_loader, epochs=10, device="cuda
         print("Training complete!")
 
 
-from model19 import PredRNNPredictor
+from model import PredRNNPredictor
 
 
 if __name__ == '__main__':
-    
-    file_path = "E:/python_home/cscst/Data/Data-1.npy"  # Path to your numpy file
-
+  
     batch_size = 1
 
     transform = transforms.Compose([
@@ -196,7 +194,7 @@ if __name__ == '__main__':
     from openstl.datasets.dataloader_flappy import load_data
 
     # Example usage
-    train_data, vali_data, test_data = load_data(batch_size, batch_size, "E:/python_home/flappy_bird", num_workers=0)
+    train_data, vali_data, test_data = load_data(batch_size, batch_size, "./data", num_workers=0)
 
 
 #    model = MobileViTModel()

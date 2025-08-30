@@ -133,8 +133,10 @@ if __name__ == '__main__':
     transform = transforms.Compose([
         transforms.ToTensor(),
     ])
-
+    from pathlib import Path
+    _thisdir = Path(__file__).parent.absolute()
+    path = _thisdir / 'create_data' / 'fixed_gravity'
     # Example usage
-    dataset = CustomDatasetAll("E:/python_home/flappy_bird", 20, 10, transform=transform)
+    dataset = CustomDatasetAll(path, 20, 10, transform=transform)
 
     extract_positions(model, 'cuda', dataset)

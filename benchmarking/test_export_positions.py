@@ -135,6 +135,10 @@ if __name__ == '__main__':
     ])
 
     # Example usage
-    dataset = CustomDatasetAll("E:/python_home/flappy_bird", 20, 10, transform=transform)
+    from pathlib import Path
+    _thisdir = Path(__file__).parent.absolute()
+    file_path = _thisdir / 'create_data' / 'fixed_gravity'
+
+    dataset = CustomDatasetAll(file_path, 20, 10, transform=transform)
 
     extract_positions(model, 'cuda', dataset)

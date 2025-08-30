@@ -1,9 +1,12 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 if __name__ == '__main__':
-    file_path_str = "E:/python_home/CSCT/benchmarking/create_data/short_window/positions_141.txt"
+    _thisdir = Path(__file__).parent.absolute()
+    file_path_str = _thisdir / 'create_data' / 'fixed_gravity' / "positions_141.txt"
+
     with open(file_path_str, 'r') as f:
         lines = f.readlines()  
     positions = [float(line.strip()) for line in lines]

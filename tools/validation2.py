@@ -107,6 +107,6 @@ if __name__ == '__main__':
 
     from openstl.datasets.dataloader_flappy import load_data
     
-    train_load, validate_load, test_load = load_data(1, 1, "E:/python_home/flappy_bird")
+    train_load, validate_load, test_load = load_data(1, 1, "./data")
 
     check_static2(model, 'cuda', validate_load)

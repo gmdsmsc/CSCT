@@ -184,8 +184,9 @@ from model18 import ConvLSTMPredictor
 
 
 if __name__ == '__main__':
-    
-    file_path = "E:/python_home/cscst/Data/Data-1.npy"  # Path to your numpy file
+    from pathlib import Path
+    _thisdir = Path(__file__).parent.absolute()
+    file_path = _thisdir / 'create_data' / 'fixed_gravity' / 'Data-1.npy'
 
     batch_size = 1
 
@@ -193,10 +194,9 @@ if __name__ == '__main__':
         transforms.ToTensor(),
     ])
 
-    from openstl.datsets.dataloader_flappy import load_data
 
     # Example usage
-    train_data, vali_data, test_data = load_data(batch_size, batch_size, "E:/python_home/flappy_bird", num_workers=0)
+    train_data, vali_data, test_data = load_data(batch_size, batch_size, "./data", num_workers=0)
 
 
 #    model = MobileViTModel()
