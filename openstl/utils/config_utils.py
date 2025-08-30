@@ -5,6 +5,7 @@ import shutil
 import sys
 import ast
 from importlib import import_module
+import os
 
 '''
 Thanks the code from https://github.com/open-mmlab/mmcv/blob/master/mmcv/utils/config.py wrote by Open-MMLab.
@@ -70,16 +71,15 @@ class Config:
             raise IOError('Only py type are supported now!')
 
         with tempfile.TemporaryDirectory() as temp_config_dir:
-            temp_config_file = tempfile.NamedTemporaryFile(
-                dir=temp_config_dir, suffix=fileExtname)
-            temp_config_name = osp.basename(temp_config_file.name)
+            fd, temp_path = tempfile.mkstemp(dir=temp_config_dir, suffix=fileExtname)
+            os.close(fd)  # Close immediately to prevent locking issues
 
-            # Substitute predefined variables
+            temp_config_name = osp.basename(temp_path)
+
             if use_predefined_variables:
-                Config._substitute_predefined_vars(filename,
-                                                   temp_config_file.name)
+                Config._substitute_predefined_vars(filename, temp_path)
             else:
-                shutil.copyfile(filename, temp_config_file.name)
+                shutil.copyfile(filename, temp_path)
 
             if filename.endswith('.py'):
                 temp_module_name = osp.splitext(temp_config_name)[0]
@@ -92,11 +92,9 @@ class Config:
                     for name, value in mod.__dict__.items()
                     if not name.startswith('__')
                 }
-                # delete imported module
                 del sys.modules[temp_module_name]
-            # close temp file
-            temp_config_file.close()
         return cfg_dict
+
 
     @staticmethod
     def fromfile(filename, use_predefined_variables=True):

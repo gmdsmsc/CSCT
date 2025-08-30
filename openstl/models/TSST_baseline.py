@@ -74,10 +74,66 @@ class GatedTransformer(nn.Module):
             nn.init.constant_(m.weight, 1.0)       
             
     def forward(self, x):
-        for attn, ff, drop_path1,drop_path2 in self.layers:
-            x = x + drop_path1(attn(x))
-            x = x + drop_path2(ff(x))
+        for i, (attn, ff, dp1, dp2) in enumerate(self.layers):
+            x_attn = attn(x)
+            x = x + dp1(x_attn)
+            x = x + dp2(ff(x))
         return self.norm(x)
+    
+class PredFormerLayer(nn.Module):
+    def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0., attn_dropout=0., drop_path=0.1):
+        super(PredFormerLayer, self).__init__()
+        
+        self.ts_temporal_transformer = GatedTransformer(dim, depth, heads, dim_head, 
+                                                   mlp_dim, dropout, attn_dropout, drop_path)
+        self.ts_space_transformer = GatedTransformer(dim, depth, heads, dim_head, 
+                                                mlp_dim, dropout, attn_dropout, drop_path)
+        self.st_space_transformer = GatedTransformer(dim, depth, heads, dim_head, 
+                                                mlp_dim, dropout, attn_dropout, drop_path)
+        self.st_temporal_transformer = GatedTransformer(dim, depth, heads, dim_head, 
+                                                   mlp_dim, dropout, attn_dropout, drop_path)
+
+    def forward(self, x):
+
+        b, t, n, _ = x.shape        
+        x_ts, x_ori = x, x    
+        
+        
+        # ts-t branch
+        x_ts = rearrange(x_ts, 'b t n d -> b n t d')
+        x_ts = rearrange(x_ts, 'b n t d -> (b n) t d')
+        x_ts = self.ts_temporal_transformer(x_ts)
+            
+        # ts-s branch
+        x_ts = rearrange(x_ts, '(b n) t d -> b n t d', b=b)
+        x_ts = rearrange(x_ts, 'b n t d -> b t n d')
+        x_ts = rearrange(x_ts, 'b t n d -> (b t) n d') 
+        x_ts = self.ts_space_transformer(x_ts)
+
+
+        # ts output branch     
+        x_ts = rearrange(x_ts, '(b t) n d -> b t n d', b=b) 
+  
+        # add   
+        # x_ts += x_ori
+        
+        x_st, x_ori = x_ts, x_ts     
+        
+        # st-s branch
+        x_st = rearrange(x_st, 'b t n d -> (b t) n d')
+        x_st = self.st_space_transformer(x_st)
+
+        # st-t branch
+        x_st = rearrange(x_st, '(b t) ... -> b t ...', b=b)  
+        x_st = x_st.permute(0, 2, 1, 3) # b n T d        
+        x_st = rearrange(x_st, 'b n t d -> (b n) t d')  
+        x_st = self.st_temporal_transformer(x_st)
+
+        # st output branch     
+        x_st = rearrange(x_st, '(b n) t d -> b n t d', b=b)
+        x_st = rearrange(x_st, 'b n t d -> b t n d', b=b) 
+        
+        return x_st
 
 def sinusoidal_embedding(n_channels, dim):
     pe = torch.FloatTensor([[p / (10000 ** (2 * (i // 2) / dim)) for i in range(dim)]
@@ -86,6 +142,7 @@ def sinusoidal_embedding(n_channels, dim):
     pe[:, 1::2] = torch.cos(pe[:, 1::2])
     return rearrange(pe, '... -> 1 ...')
       
+
 class PredFormer_Model(nn.Module):
     def __init__(self, model_config, **kwargs):
         super().__init__()
@@ -118,46 +175,67 @@ class PredFormer_Model(nn.Module):
         self.pos_embedding = nn.Parameter(sinusoidal_embedding(self.num_frames_in * self.num_patches, self.dim),
                                                requires_grad=False).view(1, self.num_frames_in, self.num_patches, self.dim)
 
-        self.space_transformer = GatedTransformer(self.dim, self.Ndepth, self.heads, self.dim_head, 
-                                                self.dim * self.scale_dim, self.dropout, self.attn_dropout, self.drop_path)
-        self.temporal_transformer = GatedTransformer(self.dim, self.Ndepth, self.heads, self.dim_head, 
-                                                self.dim * self.scale_dim, self.dropout, self.attn_dropout, self.drop_path)
-        
+        self.blocks = nn.ModuleList([
+            PredFormerLayer(self.dim, self.depth, self.heads, self.dim_head, self.dim * self.scale_dim, self.dropout, self.attn_dropout, self.drop_path)
+            for i in range(self.Ndepth)
+        ])
+
         self.mlp_head = nn.Sequential(
             nn.LayerNorm(self.dim),
             nn.Linear(self.dim, self.num_channels * self.patch_size ** 2)
             ) 
-                
-
-    def forward(self, x):
-        B, T, C, H, W = x.shape
         
+        self.film_gamma_x = nn.Sequential(
+            nn.Embedding(3, self.dim),
+            nn.Linear(self.dim, self.dim))
+        self.film_beta_x = nn.Sequential(
+            nn.Embedding(3, self.dim),
+            nn.Linear(self.dim, self.dim))
+        self.film_gamma_y = nn.Sequential(
+            nn.Embedding(3, self.dim),
+            nn.Linear(self.dim, self.dim))
+        self.film_beta_y = nn.Sequential(
+            nn.Embedding(3, self.dim),
+            nn.Linear(self.dim, self.dim))
+
+    def forward(self, x, x_labels=None, y_label=None):
+        
+        B, T, C, H, W = x.shape
+
         # Patch Embedding
         x = self.to_patch_embedding(x)
         
         # Posion Embedding
         x += self.pos_embedding.to(x.device)
+
+        if x_labels is not None:
+            x_emb = self.film_gamma_x[0](x_labels.to(x.device))  # [B, L, D]
+            x_emb = x_emb.mean(dim=1)  # or use attention pooling
+            gamma = self.film_gamma_x[1](x_emb)
+            beta = self.film_beta_x[1](x_emb)
+            x = x * (1 + gamma) + beta
+
+        if y_label is not None:
+            y_emb = self.film_gamma_y[0](y_label.to(x.device))  # [B, L, D]
+            y_emb = y_emb.mean(dim=1)  # or use attention pooling
+            gamma = self.film_gamma_y[1](y_emb)
+            beta = self.film_beta_y[1](y_emb)
+            x = x * (1 + gamma) + beta
+
+        for i, blk in enumerate(self.blocks):
+            x = blk(x)  # blk returns output and current hidden state
         
-        b, t, n, _ = x.shape        
-        
-        # ts-t branch
-        x_t = rearrange(x, 'b t n d -> b n t d')
-        x_t = rearrange(x_t, 'b n t d -> (b n) t d')
-        x_t = self.temporal_transformer(x_t)
-        
-        # ts-s branch
-        x_ts = rearrange(x_t, '(b n) t d -> b n t d', b=b)
-        x_ts = rearrange(x_ts, 'b n t d -> b t n d')
-        x_ts = rearrange(x_ts, 'b t n d -> (b t) n d') 
-        x_ts = self.space_transformer(x_ts)
-            
         # MLP head        
-        x = self.mlp_head(x_ts.reshape(-1, self.dim))
+        x = self.mlp_head(x.reshape(-1, self.dim))
         x = x.view(B, T, self.num_patches_h, self.num_patches_w, C, self.patch_size, self.patch_size)
         x = x.permute(0, 1, 4, 2, 5, 3, 6).reshape(B, T, C, H, W)
-        
+
         return x
-    
+
+
+
+
+
 # model_config = {
 #     # image h w c
 #     'height': 64,
@@ -178,7 +256,7 @@ class PredFormer_Model(nn.Module):
 #     'scale_dim': 4,
 #     # depth
 #     'depth': 1,
-#     'Ndepth': 12
+#     'Ndepth': 6
 # }
 
 # model = PredFormer_Model(model_config)

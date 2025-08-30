@@ -8,7 +8,8 @@ import os
 from openstl.utils import measure_throughput
 from fvcore.nn import FlopCountAnalysis, flop_count_table
 from timm.models.layers import DropPath, to_2tuple, trunc_normal_
-from openstl.modules import Attention, PreNorm, FeedForward
+from openstl.modules.rope_attention import Attention
+from openstl.modules import PreNorm, FeedForward
 import math
 
 class SwiGLU(nn.Module):
@@ -74,11 +75,13 @@ class GatedTransformer(nn.Module):
             nn.init.constant_(m.weight, 1.0)       
             
     def forward(self, x):
-        for attn, ff, drop_path1,drop_path2 in self.layers:
-            x = x + drop_path1(attn(x))
-            x = x + drop_path2(ff(x))
+        for i, (attn, ff, dp1, dp2) in enumerate(self.layers):
+            x_attn = attn(x)
+            x = x + dp1(x_attn)
+            x = x + dp2(ff(x))
         return self.norm(x)
-    
+
+
 class PredFormerLayer(nn.Module):
     def __init__(self, dim, depth, heads, dim_head, mlp_dim, dropout=0., attn_dropout=0., drop_path=0.1):
         super(PredFormerLayer, self).__init__()
@@ -93,6 +96,7 @@ class PredFormerLayer(nn.Module):
                                                    mlp_dim, dropout, attn_dropout, drop_path)
 
     def forward(self, x):
+
         b, t, n, _ = x.shape        
         x_ts, x_ori = x, x    
         
@@ -101,7 +105,7 @@ class PredFormerLayer(nn.Module):
         x_ts = rearrange(x_ts, 'b t n d -> b n t d')
         x_ts = rearrange(x_ts, 'b n t d -> (b n) t d')
         x_ts = self.ts_temporal_transformer(x_ts)
-        
+            
         # ts-s branch
         x_ts = rearrange(x_ts, '(b n) t d -> b n t d', b=b)
         x_ts = rearrange(x_ts, 'b n t d -> b t n d')
@@ -120,7 +124,7 @@ class PredFormerLayer(nn.Module):
         # st-s branch
         x_st = rearrange(x_st, 'b t n d -> (b t) n d')
         x_st = self.st_space_transformer(x_st)
-        
+
         # st-t branch
         x_st = rearrange(x_st, '(b t) ... -> b t ...', b=b)  
         x_st = x_st.permute(0, 2, 1, 3) # b n T d        
@@ -132,14 +136,8 @@ class PredFormerLayer(nn.Module):
         x_st = rearrange(x_st, 'b n t d -> b t n d', b=b) 
         
         return x_st
-
-def sinusoidal_embedding(n_channels, dim):
-    pe = torch.FloatTensor([[p / (10000 ** (2 * (i // 2) / dim)) for i in range(dim)]
-                            for p in range(n_channels)])
-    pe[:, 0::2] = torch.sin(pe[:, 0::2])
-    pe[:, 1::2] = torch.cos(pe[:, 1::2])
-    return rearrange(pe, '... -> 1 ...')
       
+
 class PredFormer_Model(nn.Module):
     def __init__(self, model_config, **kwargs):
         super().__init__()
@@ -169,8 +167,6 @@ class PredFormer_Model(nn.Module):
             Rearrange('b t c (h p1) (w p2) -> b t (h w) (p1 p2 c)', p1=self.patch_size, p2=self.patch_size),
             nn.Linear(self.patch_dim, self.dim),
             )
-        self.pos_embedding = nn.Parameter(sinusoidal_embedding(self.num_frames_in * self.num_patches, self.dim),
-                                               requires_grad=False).view(1, self.num_frames_in, self.num_patches, self.dim)
 
         self.blocks = nn.ModuleList([
             PredFormerLayer(self.dim, self.depth, self.heads, self.dim_head, self.dim * self.scale_dim, self.dropout, self.attn_dropout, self.drop_path)
@@ -181,16 +177,32 @@ class PredFormer_Model(nn.Module):
             nn.LayerNorm(self.dim),
             nn.Linear(self.dim, self.num_channels * self.patch_size ** 2)
             ) 
-                
-     
-    def forward(self, x):
+
+        self.label_embedding = nn.Embedding(3, self.dim)
+        self.y_label_embedding = nn.Embedding(3, self.dim)
+
+    def reset_memory(self, device):
+        ''' No memory on this model '''
+        pass
+
+    def forward(self, x, x_labels=None, y_label=None):
         B, T, C, H, W = x.shape
         
         # Patch Embedding
         x = self.to_patch_embedding(x)
         
-        # Posion Embedding
-        x += self.pos_embedding.to(x.device)
+        if x_labels is not None:
+            x_emb = self.label_embedding(x_labels.to(x.device))  # [B, D]
+            x_emb = x_emb.view(1, T, 1, -1)  # Or use two unsqueezes:
+            x_emb = x_emb.expand(-1, -1, 144, self.dim)
+            x += x_emb
+
+        if y_label is not None:
+            y_emb = self.y_label_embedding(y_label.to(x.device))  # [B, D]
+            y_emb = y_emb.view(1, T, 1, -1)  # Or use two unsqueezes:
+            y_emb = y_emb.expand(-1, -1, 144, self.dim)
+            x += y_emb
+
         
         # PredFormer Encoder
         for blk in self.blocks:
@@ -203,33 +215,3 @@ class PredFormer_Model(nn.Module):
         
         return x
 
-# model_config = {
-#     # image h w c
-#     'height': 64,
-#     'width': 64,
-#     'num_channels': 1,
-#     # video length in and out
-#     'pre_seq': 10,
-#     'after_seq': 10,
-#     # patch size
-#     'patch_size': 8,
-#     'dim': 256, 
-#     'heads': 8,
-#     'dim_head': 32,
-#     # dropout
-#     'dropout': 0.0,
-#     'attn_dropout': 0.0,
-#     'drop_path': 0.0,
-#     'scale_dim': 4,
-#     # depth
-#     'depth': 1,
-#     'Ndepth': 6
-# }
-
-# model = PredFormer_Model(model_config)
-# x = torch.rand(1, 10, 1, 64, 64)
-# output = model(x)
-# print(output.shape)  # [B, T, C, H, W]
-# # # Calculate FLOPs
-# flops = FlopCountAnalysis(model, x)
-# print(f'Number of flops: {flop_count_table(flops)}')

@@ -14,7 +14,16 @@ except ImportError:
 
 
 if __name__ == '__main__':
+
+    import os
+    import tempfile
+
+    # Set a custom directory (must exist and be writable)
+    os.environ['TMPDIR'] = 'temp'
+    tempfile.tempdir = os.environ['TMPDIR']
+
     args = create_parser().parse_args()
+
     config = args.__dict__
 
     if has_nni:
@@ -41,6 +50,10 @@ if __name__ == '__main__':
 
     print('>'*35 + ' training ' + '<'*35)
     exp = BaseExperiment(args)
+
+
+    batch = next(iter(exp.train_loader))
+
     rank, _ = get_dist_info()
     exp.train()
 

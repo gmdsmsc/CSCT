@@ -65,7 +65,7 @@ def create_parser():
                         help='Whether to drop the last batch in the val data loading')
 
     # method parameters
-    parser.add_argument('--method', '-m', default='SimVP', type=str,
+    parser.add_argument('--method', '-m', default='PredFormer', type=str,
                         choices=['ConvLSTM', 'convlstm', 'CrevNet', 'crevnet', 'DMVFN', 'dmvfn', 'E3DLSTM', 'e3dlstm',
                                  'MAU', 'mau', 'MIM', 'mim', 'PhyDNet', 'phydnet', 'PredNet', 'prednet',
                                  'PredRNN', 'predrnn', 'PredRNNpp', 'predrnnpp', 'PredRNNv2', 'predrnnv2',

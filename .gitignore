@@ -130,3 +130,4 @@ logs
 logs_tb
 work_dirs
 work_dir
+*.npy

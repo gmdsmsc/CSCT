@@ -102,6 +102,7 @@ class Base_method(object):
         Returns:
             results_all (dict(np.ndarray)): The concatenated outputs.
         """
+
         # preparation
         results = []
         length = len(data_loader.dataset) if length is None else length
@@ -159,18 +160,25 @@ class Base_method(object):
         prog_bar = ProgressBar(len(data_loader))
         length = len(data_loader.dataset) if length is None else length
 
+        current_subset = None
+
         # loop
-        for idx, (batch_x, batch_y) in enumerate(data_loader):
+        for idx, (batch_x, batch_y, label_x, label_y, subset_no) in enumerate(data_loader):
+
             with torch.no_grad():
                 batch_x, batch_y = batch_x.to(self.device), batch_y.to(self.device)
-                pred_y = self._predict(batch_x, batch_y)
+                if current_subset != subset_no:
+                    current_subset = subset_no
+                    if hasattr(self.model, 'reset_memory'):
+                        self.model.reset_memory(self.device)
+
+                pred_y = self._predict(batch_x, label_x, label_y, batch_y)
 
             if gather_data:  # return raw datas
                 results.append(dict(zip(['inputs', 'preds', 'trues'],
                                         [batch_x.cpu().numpy(), pred_y.cpu().numpy(), batch_y.cpu().numpy()])))
             else:  # return metrics
                 eval_res, _ = metric(pred_y.cpu().numpy(), batch_y.cpu().numpy(),
-                                     data_loader.dataset.mean, data_loader.dataset.std,
                                      metrics=self.metric_list, spatial_norm=self.spatial_norm, return_log=False)
                 eval_res['loss'] = self.criterion(pred_y, batch_y).cpu().numpy()
                 for k in eval_res.keys():
