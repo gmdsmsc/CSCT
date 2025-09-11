@@ -5,7 +5,7 @@
 #from .PredFormer_Binary_TS import PredFormer_Model
 # from .PredFormer_Triplet_STS import PredFormer_Model
 # from .PredFormer_Triplet_TST import PredFormer_Model
-from .TSST_rope import PredFormer_Model
+from .TSST_rope_film import PredFormer_Model
 # from .PredFormer_Quadruplet_STTS import PredFormer_Model
 
 __all__ = [

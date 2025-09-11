@@ -70,6 +70,7 @@ class Config:
         if fileExtname not in ['.py']:
             raise IOError('Only py type are supported now!')
 
+        os.makedirs("temp", exist_ok=True)
         with tempfile.TemporaryDirectory() as temp_config_dir:
             fd, temp_path = tempfile.mkstemp(dir=temp_config_dir, suffix=fileExtname)
             os.close(fd)  # Close immediately to prevent locking issues

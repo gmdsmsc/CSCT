@@ -340,9 +340,12 @@ if __name__ == '__main__':
         transforms.ToTensor(),
     ])
 
-    
     # Example usage
-    dataset = CustomDatasetAll("./data", 20, 10, transform=transform)
+    from pathlib import Path
+    _thisdir = Path(__file__).parent.parent.absolute()
+    file_path = _thisdir / 'benchmarking'/ 'create_data' / 'fixed_gravity'
+
+    dataset = CustomDatasetAll(file_path, 20, 10, transform=transform)
 
 
     check(model, 'cuda', dataset)

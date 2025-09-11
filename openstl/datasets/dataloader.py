@@ -9,7 +9,7 @@ def load_data(dataname, batch_size, val_batch_size, num_workers, data_root, dist
         drop_last=kwargs.get('drop_last', False),
     )
 
-    elif dataname == 'flappy':
+    if dataname == 'flappy':
         from .dataloader_flappy import load_data
         return load_data(batch_size, val_batch_size, data_root, num_workers, **cfg_dataloader)
     else:
