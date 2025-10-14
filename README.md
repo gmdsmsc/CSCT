@@ -23,9 +23,14 @@ Add the top level project to your PYTHONPATH:  $env:PYTHONPATH="/path/to/CSCT"
 
 
 ## Commands
+
+### Generate Data
+
+python benchmarking/create_data/fixed_gravity.py
+
 ### Train
 
-python tools/train.py --config_file configs/flappy/PredFormer.py --dataname flappy --data_root data --res_dir work_dirs --batch_size 1 --val_batch_size 16 --epoch 30 --overwrite --lr 1e-3 --opt adamw --weight_decay 1e-2 --ex_name "flappy"  --tb_dir logs_tb/03_08
+python tools/train.py --config_file configs/flappy/PredFormer.py --dataname flappy --data_root data --res_dir work_dirs --batch_size 1 --val_batch_size 1 --epoch 1000 --overwrite --lr 1e-3 --opt adamw --weight_decay 1e-2 --ex_name "flappy"
 
 ### Inference
 
