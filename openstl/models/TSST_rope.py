@@ -138,7 +138,7 @@ class PredFormerLayer(nn.Module):
         return x_st
       
 
-class PredFormer_Model(nn.Module):
+class InteractivePredictionModel(nn.Module):
     def __init__(self, model_config, **kwargs):
         super().__init__()
         self.image_height = model_config['height']

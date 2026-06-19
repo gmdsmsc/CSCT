@@ -32,10 +32,10 @@ def print_model_diagnostics(model, model_name="UnnamedModel"):
 
 
 if __name__ == '__main__':
-    from configs.flappy.PredFormer import model_config
-    from openstl.models.TSST_baseline_film import PredFormer_Model
-    model = PredFormer_Model(model_config)
-    print_model_diagnostics(model, model_name="PredFormer_Model")
+    from configs.flappy.InteractivePredictionModel import model_config
+    from openstl.models.TSST_baseline_film import InteractivePredictionModel
+    model = InteractivePredictionModel(model_config)
+    print_model_diagnostics(model, model_name="InteractivePredictionModel")
 
     import torch
     from fvcore.nn import FlopCountAnalysis, parameter_count_table

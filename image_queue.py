@@ -114,8 +114,8 @@ class Game:
     def __init__(self, device, dataset, model):
         self.device = device
         self.model = model
-        self.dataset = dataset       
-        self.image_generator = gen_images(iter(DataLoader(dataset, batch_size=1, shuffle=True, drop_last=True)))
+        dataloader = DataLoader(dataset, batch_size=1, shuffle=True, drop_last=True)     
+        self.image_generator = gen_images(iter(dataloader))
         self.queue = GameQueue()
 
     def reset(self):

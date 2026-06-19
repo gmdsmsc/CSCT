@@ -357,7 +357,6 @@ def check_static2(model, device, dataloader):
     loss5_all = []
     loss6_all = []
     for batch_x, batch_y, labels_x, labels_y, subset_no in dataloader:
-        import numpy as np
         batch_x, labels_x, labels_y = batch_x.to(device), labels_x.to(device), labels_y.to(device)
         batch_y = batch_y.to(device)
         pred = model._predict(batch_x, labels_x, labels_y)

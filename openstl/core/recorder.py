@@ -6,7 +6,7 @@ class Recorder:
     def __init__(self, verbose=False, delta=0, early_stop_time=10):
         self.verbose = verbose
         self.best_score = None
-        self.val_loss_min = np.Inf
+        self.val_loss_min = np.inf
         self.delta = delta
         self.decrease_time = 0
         self.early_stop_time = early_stop_time

@@ -180,13 +180,13 @@ def train_model(model, loss_fn, dataloader, vali_loader, epochs=10, device="cuda
         print("Training complete!")
 
 
-from model18 import ConvLSTMPredictor
+from benchmarking.legacy_models.conv_lstm.model import ConvLSTMPredictor
+from openstl.datasets.dataloader_flappy import load_data
 
 
 if __name__ == '__main__':
     from pathlib import Path
     _thisdir = Path(__file__).parent.absolute()
-    file_path = _thisdir / 'create_data' / 'fixed_gravity' / 'Data-1.npy'
 
     batch_size = 1
 
@@ -196,7 +196,7 @@ if __name__ == '__main__':
 
 
     # Example usage
-    train_data, vali_data, test_data = load_data(batch_size, batch_size, "./data", num_workers=0)
+    train_data, vali_data, test_data = load_data(batch_size, batch_size, "benchmarking/create_data/fixed_gravity", num_workers=0)
 
 
 #    model = MobileViTModel()

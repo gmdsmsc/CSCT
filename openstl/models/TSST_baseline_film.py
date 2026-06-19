@@ -143,7 +143,7 @@ def sinusoidal_embedding(n_channels, dim):
     return rearrange(pe, '... -> 1 ...')
       
 
-class PredFormer_Model(nn.Module):
+class InteractivePredictionModel(nn.Module):
     def __init__(self, model_config, **kwargs):
         super().__init__()
         self.image_height = model_config['height']
@@ -259,7 +259,7 @@ class PredFormer_Model(nn.Module):
 #     'Ndepth': 6
 # }
 
-# model = PredFormer_Model(model_config)
+# model = InteractivePredictionModel(model_config)
 # x = torch.rand(1, 10, 1, 64, 64)
 # output = model(x)
 # print(output.shape)  # [B, T, C, H, W]

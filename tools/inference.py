@@ -331,21 +331,4 @@ if __name__ == '__main__':
 
     model = exp.method
 
-
-
-    from openstl.datasets.dataloader_flappy import CustomDatasetAll
-    import torchvision.transforms as transforms
-
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-    ])
-
-    # Example usage
-    from pathlib import Path
-    _thisdir = Path(__file__).parent.parent.absolute()
-    file_path = _thisdir / 'benchmarking'/ 'create_data' / 'fixed_gravity'
-
-    dataset = CustomDatasetAll(file_path, 20, 10, transform=transform)
-
-
-    check(model, 'cuda', dataset)
+    check(model, 'cuda', exp.test_loader.dataset)

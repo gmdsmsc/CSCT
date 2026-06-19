@@ -1,3 +1,17 @@
+pygame
+numpy
+opencv-python
+pillow
+packaging
+fvcore
+torch
+tensorboard
+timm
+einops
+imageio
+matplotlib
+scikit-image
+lpips
 -r requirements/optional.txt
 -r requirements/runtime.txt
 -r requirements/tests.txt

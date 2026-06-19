@@ -223,7 +223,6 @@ dataset_parameters = {
         'in_shape': [10, 1, 84, 84],
         'pre_seq_length': 10,
         'aft_seq_length': 10,
-        'data_root': 'E:/python_home/flappy_bird',
         'total_length': 20,
         'data_name': 'flappy',
         'metrics': ['mse', 'mae', 'ssim', 'psnr'],

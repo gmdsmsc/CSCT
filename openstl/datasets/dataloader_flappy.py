@@ -23,6 +23,7 @@ class CustomDataset(Dataset):
         self.index_list = partition_list(len(self.image_list), image_count, overlap)
 
 
+
     def __len__(self):
         return len(self.index_list) # Each set consists of image_count images
 
@@ -98,6 +99,8 @@ class CustomSubset(Subset):
         end_index = sum(dataset.lengths[:end])
         super().__init__(dataset, range(start_index, end_index))
 
+        self.mean = 0
+        self.std = 1
 
 def load_data(batch_size, val_batch_size, data_root, num_workers=4, data_name='flappy',
               pre_seq_length=10, aft_seq_length=10, in_shape=[1, 4, 84, 84],

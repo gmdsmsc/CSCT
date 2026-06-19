@@ -109,9 +109,11 @@ def collect_env():
         for name, devids in devices.items():
             env_info['GPU ' + ','.join(devids)] = name
 
-    gcc = subprocess.check_output('gcc --version', shell=True)
-    gcc = gcc.decode('utf-8').splitlines()[0]  # safer than piping through 'head'
-    env_info['GCC'] = gcc
+    try:
+        gcc = subprocess.check_output('gcc --version', shell=True)
+        gcc = gcc.decode('utf-8').split('\n')[0]
+    except Exception:
+        gcc = 'Not installed'
 
     env_info['PyTorch'] = torch.__version__
     env_info['PyTorch compiling details'] = torch.__config__.show()

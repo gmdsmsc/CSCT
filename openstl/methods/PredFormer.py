@@ -5,7 +5,7 @@ from tqdm import tqdm
 from timm.utils import AverageMeter
 import torch.nn.functional as F
 
-from openstl.models import PredFormer_Model
+from openstl.models import InteractivePredictionModel
 from openstl.utils import reduce_tensor
 from .base_method import Base_method
 
@@ -18,7 +18,7 @@ class PredFormer(Base_method):
         self.criterion = nn.MSELoss()
 
     def _build_model(self, args):
-        return PredFormer_Model(**args).to(self.device)
+        return InteractivePredictionModel(**args).to(self.device)
 
     def _predict(self, batch_x, label_x, label_y, batch_y=None, **kwargs):
         if self.args.aft_seq_length == self.args.pre_seq_length:
